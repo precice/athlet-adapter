@@ -147,7 +147,6 @@ contains
       
    end subroutine
 
-   ! Todo: Where to call this?
    subroutine adapterfinalize()
      ! Destroy the preCICE interface and solver connections
      
@@ -183,6 +182,12 @@ subroutine execute_c()
   ok = connectCallback( hook_scope, 'ATRANS_ExtDataDone', adapterexecute )
   if (ok /= 1) then
      write(*,*) "Unable to set callback 'ATRANS_ExtDataDone'"
+  end if
+
+  ! This hooks adapterfinalize() to the end of ATHLET
+  ok = connectCallback( hook_scope, 'ATHLET_End', adapterfinalize )
+  if (ok /= 1) then
+     write(*,*) "Unable to set callback 'ATHLET_End'"
   end if
 end subroutine
 
