@@ -118,7 +118,7 @@ contains
 
       ! Is the coupling still ongoing?
       call precicef_ongoing(ongoing)
-      do while (ongoing.NE.0)
+      if (ongoing.NE.0) then
 
         ! Do we need to write a coupling iteration checkpoint? (only relevant in implicit coupling)
         call precicef_action_required(writeItCheckp, bool, 50)
@@ -143,7 +143,7 @@ contains
           write (*,*) 'DUMMY: Advancing in time'
         end if
       
-      enddo
+      end if
       
    end subroutine
 
