@@ -63,13 +63,12 @@ contains
       arg_scope => getScope( 'athlet', 'global', 'arglist' )
       ! Get the participantName
       participantName = char(string(get(arg_scope, '-participantName')))
-
-      ! We currently get the participant and mesh name through screen input.
+      ! Get the meshName
+      meshName = char(string(get(arg_scope, '-meshName')))
+      ! Print the values
       write (*,*) 'Participant name:'
       write (*,*) participantName
-      !
       write (*,*) 'Mesh name:'
-      read (*, '(A)') meshName
       write (*,*) meshName
       !
       ! We currently hard-code the configuration file.
