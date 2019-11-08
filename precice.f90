@@ -50,15 +50,22 @@ contains
       type(HashMap_t),  pointer :: scope
       character(len=:), pointer :: output_id
       
+      ! Get the command-line arguments scope
+      type(HashMap_t),  pointer :: arg_scope
+      
       scope       => getScope( state_scope, 'ccc' )
       output_id   => getCharPtr( scope, 'id' )
       write(*,*) "Output ID: ", output_id
 
       write (*,*) 'ATHLET preCICE adapter: Starting...'
 
+      ! Bind pointer arg_scope to the athlet/global/arglist scope
+      arg_scope => getScope( 'athlet', 'global', 'arglist' )
+      ! Get the participantName
+      participantName = char(string(get(arg_scope, '-participantName')))
+
       ! We currently get the participant and mesh name through screen input.
       write (*,*) 'Participant name:'
-      read (*, '(A)') participantName
       write (*,*) participantName
       !
       write (*,*) 'Mesh name:'
