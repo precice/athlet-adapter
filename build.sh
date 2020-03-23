@@ -1,3 +1,3 @@
 !#/bin/bash
 
-make FC=gfortran OUT_TYPE=shared CFG=Release built -j -I.
+make FC=gfortran OUT_TYPE=shared CFG=Release built -j

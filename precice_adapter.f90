@@ -7,11 +7,11 @@
 !     More information on https://github.com/precice/athlet-adapter
 !****************************************************************************
 
-module precice
+module precice_adapter
   ! The adapter is an ATHLET plugin
    use athlet_plugin
    ! preCICE Fortran bindings (Fortran module based)
-   use PreCICE_solver_if_module
+   use precice
 
    implicit none
    
@@ -80,6 +80,8 @@ contains
       readItCheckp(1:50)     ='                                                  '
       writeItCheckp(1:50)    ='                                                  '
 
+      write (*,*) 'Creating preCICE...'
+      
       ! Create the preCICE solver interface
       ! participantName: preCICE participant name
       ! config: preCICE configuration file name
@@ -88,6 +90,8 @@ contains
       ! 50: Maximum length for the participantName string
       ! 50: Maximum length for the config string
       call precicef_create(participantName, config, 0, 1, 50, 50)
+      
+      write (*,*) 'Created preCICE'
       
       ! Create the preCICE interface mesh
       ! We have only one vertex, we need 3 coordinates in 3D, 2 in 2D
@@ -131,10 +135,11 @@ contains
         if (bool.EQ.1) THEN
           ! This is still a dummy adapter, no checkpoint is being written
           write (*,*) 'DUMMY: Writing iteration checkpoint'
-          call precicef_fulfilled_action(writeItCheckp, 50)
+          call precicef_mark_action_fulfilled(writeItCheckp, 50)
         end if
 
         ! Advance the coupling
+        write (*,*) "ATHLET preCICE adapter: Calling advance..."
         call precicef_advance(dtlimit)
         ! After advancing, is the coupling still ongoing?
         call precicef_ongoing(ongoing)
@@ -144,12 +149,14 @@ contains
         if (bool.EQ.1) THEN
           write (*,*) 'DUMMY: Reading iteration checkpoint'
           ! This is still a dummy adapter, no checkpoint is being read
-          call precicef_fulfilled_action(readItCheckp, 50)
+          call precicef_mark_action_fulfilled(readItCheckp, 50)
         else
           write (*,*) 'DUMMY: Advancing in time'
         end if
       
       end if
+      
+      write (*,*) "ATHLET preCICE adapter: End of execute()"
       
    end subroutine
 
@@ -168,7 +175,7 @@ end module
 !***********************************************************************
 !_PROC_EXPORT(initialize_c)
 subroutine initialize_c()
-   use precice
+   use precice_adapter
 
    call initialize_athlet_plugin()
    call adapterinitialize()
@@ -180,7 +187,7 @@ end subroutine
 !***********************************************************************
 !_PROC_EXPORT(execute_c)
 subroutine execute_c()
-  use precice
+  use precice_adapter
 
   call adapterexecute()
   
