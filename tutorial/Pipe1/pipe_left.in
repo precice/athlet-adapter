@@ -1,0 +1,341 @@
+PRINT OFF
+HTCML ON
+@
+@-----------------------------------------------------------------------
+C---- HEADER
+  Example for coupling ATHLET with preCICE
+  Fluid-Fluid coupling, left pipe
+@======================================================================
+@
+@-----------------------------------------------------------------------
+C---- PLUGIN
+@ The preCICE adapter is a plugin for ATHLET, we load it here
+    precice_adapter
+C---- CONTROL
+@
+@ DTPRIN: Period (problem seconds) of the screen output
+@ ISPRIN: Switch for printing data every FEBE time step (>0: every ISPRIN time steps)
+@ INPPRN: Verbosity of the screen output (-2 to 4)
+@ IPLPRN: Switch for printing of plot data structure (0: no)
+@ IGRPRN: Switch for generating data for AIG (1: yes)
+@ DTPLOT: Period (problem seconds) of plot files generation
+@ ISPLOT: Switch for generating plot data (>0: both in .pd and .h5)
+@ SGPLOT: (ignored)
+@ ITPLOT: Byte-size of time in results (default)
+@
+@ DTPRIN ISPRIN INPPRN IPLPRN IGRPRN DTPLOT ISPLOT   SGPLOT   ITPLOT
+  10.0    10000    2       0       1    0.0     1    DEFAULT   0
+@
+@ MZEIT : Reserved CPU time at the end of the job
+@ MCPU  : Max CPU time (default)
+@ ICPUTM: Switch for measuring CPU time consumption (0: off)
+@ MIZS  : Max FEBE iterations (0: off)
+@ TE    : End problem time
+@ SGEND : (ignored)
+@
+@ MZEIT     MCPU     ICPUTM    MIZS       TE      SGEND
+      2        0        0         0    99.0     DEFAULT
+@                              1000    99.0
+@
+@ IWBER : Switch for restart data input (0: off)
+@ IPUNC : Switch for restart data generation (2: unformatted at TPNTWR)
+@ ISREST: Period (FEBE time steps) for restart data generation (0: off)
+@
+@      IWBER       IPUNC      ISREST
+           0           2           0
+@
+@ TPNTWR: Time points for generation of restart data (ignored)
+@
+@  TPNTWR(I)
+ 10.0  20.0     30.0   40.0   50.0
+@
+C---- PARAMETERS
+@
+@ These parameters are used further down in this input file
+@ PRESS : Pressure (initial)
+@ TEMP1 : Temperature (initial)
+@ ENTH1 : Enthalpy (initial)
+@ MASSFLOW1: Mass flow (initial)
+@ IART : Model classification (1: 5-equation model)
+@
+      PRESS= 41.15D5
+      TEMP1=  230.    ENTH1 = 990.0D3
+      MASSFLOW1 = 1.0
+      IART = 1
+@
+@-----------------------------------------------------------------------
+C---- TOPOLOGY
+@
+@  1ST PRIORITY CHAIN:
+----- UPPER_LOOP
+@
+@ IPRI0: Switch for steady-state calculations (>0: standard)
+@ ISYS0: Index of system
+@      IPRI0       ISYS0
+           1           1
+@
+@ SBO0: Length at which the object is connected to the previous object
+@ ANAMO: Name of the object
+@ IARTO: Model selector
+@ SEO0: Length at which the object is connected to the following object
+@       SBO0     ANAMO          SEO0   IARTO
+         0.0     PIPE1           1.0   %IART%
+         0.0     CPL_BRANCH      0.0   %IART%
+@-----------------------------------------------------------------------
+C---- OBJECT
+@
+K---- OUTLET     TDV
+@
+@     ITYPO        FPARO       ICMPO
+          0          1.0           5
+@
+----- GEOMETRY
+@         S0          Z0          D0          A0          V0       DEP0
+         0.0         0.0       0.04         0.0         0.0        0.0
+         0.1         0.0       0.04         0.0         0.0        0.0
+@
+----- INITCOND
+@       S0          P0          T0          G0         Q0    ICK0
+       0.0         0.0         %TEMP1%        0.0        0.0     0 @WASSER
+@-----------------------------------------------------------------------
+K---- PIPE1
+@
+@     ITYPO        FPARO       ICMPO
+         10          1.0           0
+@
+----- NETWORK
+@        S01        NI01
+         0.0           5
+         1.0
+@
+----- JUNTYPES
+@  ST0        JTYP0     ATYP0
+   0.0        6         INLET1
+@
+----- GEOMETRY
+@         S0          Z0          D0          A0          V0       DEP0
+         0.0         0.0        0.04         0.0         0.0       0.75
+         1.0         0.0        0.04         0.0         0.0       0.75
+@
+----- FRICTION
+@      ITPMO       ALAMO        ROUO
+           1        0.1         0.00
+@        SF0       SDFJ0       ZFFJ0       ZFBJ0
+         0.0         0.0        0.0         0.0
+@
+----- DRIFT
+@       S01     JFLO0  JDRIFT
+        0.0       2       1                @ HORIZ,VERT,INCLINED PIPE
+@
+----- INITCOND
+@       S0          P0         T0          G0         Q0   ICK0
+       0.0      %PRESS%     %TEMP1%        0.0        0.0     0 @Wasser
+@
+@-----------------------------------------------------------------------
+K---- CPL_BRANCH      Boundary OPENFOAM
+@
+@     ITYPO        FPARO       ICMPO
+          0          1.0           0
+@
+----- GEOMETRY
+@         S0          Z0          D0          A0          V0       DEP0
+         0.0         0.0        0.04         0.0         0.0        0.0
+         0.1         0.0        0.04         0.0         0.0        0.0
+@
+----- INITCOND
+@       S0          P0          T0          G0         Q0    ICK0
+       0.0       0.0        %TEMP1%        0.0        0.0     0 @WASSER
+@-----------------------------------------------------------------------
+K---- PIPE2
+@
+@     ITYPO        FPARO       ICMPO
+         10          1.0           0
+@
+----- NETWORK
+@        S01        NI01
+         0.0           5
+         1.0
+@
+----- GEOMETRY
+@         S0          Z0          D0          A0          V0       DEP0
+         0.0         0.0        0.04         0.0         0.0       0.0
+         1.0         0.0        0.04         0.0         0.0       0.0
+@
+----- FRICTION
+@      ITPMO       ALAMO        ROUO
+           1        0.1         0.00
+@        SF0       SDFJ0       ZFFJ0       ZFBJ0
+         0.0         0.0        0.0         0.0
+@
+----- DRIFT
+@       S01     JFLO0  JDRIFT
+        0.0       2       1                @ HORIZ,VERT,INCLINED PIPE
+@
+----- INITCOND
+@       S0          P0         T0          G0         Q0   ICK0
+       0.0      %PRESS%     %TEMP1%        0.0        0.0     0 @Wasser
+@-----------------------------------------------------------------------
+C---- OBJECTCON
+@
+@   IPRIN  IEXT
+        3     1
+@
+@-----------------------------------------------------------------------
+C---- TIMEDEPVOL
+@
+K---- OUTLET
+      'TDVPRESS'  'TDVENTH'
+@
+@-----------------------------------------------------------------------
+C---- FILL
+K---- INLET1
+@   SGFLOW   SGENTH
+    FILLG1    FILLH1
+@
+@-----------------------------------------------------------------------
+C---- EXT
+@
+----- PIPE1
+@     ITCOPL     APIPE
+      1          CPL_BRANCH
+@-----------------------------------------------------------------------
+C---- DISCHARGE
+@
+@
+@-----------------------------------------------------------------------
+C---- DOUBLEND
+@
+@
+@-----------------------------------------------------------------------
+C---- PUMP
+@-----------------------------------------------------------------------
+C---- VALVE
+@-----------------------------------------------------------------------
+C*--- EVAPORATE
+@
+@      QGAMA    QGAME
+     1.0D+00  1.0D+00
+@
+@       IGVK
+           2
+@
+@      PSISV       PSISK       PSIPV        UBW0        UTD0         ZB
+     1.0D+00     1.0D+00     1.0D+00     1.5D-01     1.5D-01    1.0D+09
+@
+@         ZT       ALFSV      BETASV       ALFSK      BETASK       AKWB
+&    1.0D+09     1.0D-06     1.0D-06     1.0D-06     1.0D-06    1.0D-01
+@
+@       AKWT         AND         ANK         ANR        AFAK
+&    1.0D-01     1.0D+00     1.0D+01     0.0D+00     1.0D+00
+@
+@
+@-----------------------------------------------------------------------
+C---- SEPARATOR
+@
+@-----------------------------------------------------------------------
+C---- INTEGRAT
+@
+@         H0           T         EPS        ECKS      GRESCH
+     2.0D-05     0.0D+00     1.0D-03     1.0D-06     2.0D-08
+@
+@   HMAX   SGHMAX  DTAV  IFTRIX IGFTRX ISFTRX I2MFTRX  ITYPTS  IOTS
+ 0.1D+00  DEFAULT 1.D-6       0      0      0       0       0     0
+@
+@     T11(I)
+     0.0D+00     0.0D+00     0.0D+00     0.0D+00     0.0D+00    0.0D+00
+@
+@      TOEXP       TOIMP       TOFTR       TOEIG       TOFKT      TOJAC
+     1.0D+10     1.0D+10     1.0D+10     1.0D+10    -1.0D+10    1.0D+10
+@
+-*--- DEBUG
+@ IODEB  IUBUG  IDEBCV    ADEBT    EDEBT
+    1       6       3      0.0     1000.
+@
+-*--- JACOBI
+@ INJAC  IJSTEP  QJACR    AJAC   EJAC
+    1       1      0.0      0.   100000.
+@
+K---- DRUFAN
+@
+@   FCLIMP  FCLIMH  FCLIMT  FCLIMG  FCLIMX  FCLIMU  FCLMWL  FCLMWV
+     1.0    1.0     1.0     1.0     1.0      1.0     1.0    1.0
+@
+@    P     H     G     X
+     T     T     T     T
+@
+@-----------------------------------------------------------------------
+C---- MISCELLAN
+@
+K---- DRUFAN
+@
+@         AA          BB          CC          DD          EE
+       0.0D0     0.0D+00     0.0D+00     0.0D+00     0.0D+00
+@
+@         FF          GG          OO          PP          QQ
+&    0.0D+00     1.0D+00     0.0D+00        0.0      0.0D+00
+@
+@
+@-----------------------------------------------------------------------
+C---- HEATCOND
+@
+@  IHV
+   0         0
+@
+@
+C---- ROD
+@-----------------------------------------------------------------------
+C---- NEUKINP
+@-----------------------------------------------------------------------
+C---- STEAMGEN
+@-----------------------------------------------------------------------
+C---- GCSM
+@     PROCESS SIGNALS  ******************************
+S---- PROBLEM TIME
+PROBTIME   TIME            -           -                0.0
+@
+@     CONTROL SIGNALS    ****************************
+----- GENERICS
+@       IPRI        ICB       INTEK       DTMAX
+           0          2           1       20.0
+S---- START    ON
+  START       SWITCH    PROBTIME          -         -      -
+     0         1.0         0.001         0.001     0.0     0.0
+@
+S---- TDV-PRESS
+  TDVPRESS    ADDER       -            -           -           -
+           1  1.0       %PRESS%       0.0         0.0         0.0
+@
+S---- TDV-ENTH
+  TDVENTH     ADDER     -            -           -           -
+           1  1.0    %ENTH1%       0.0         0.0         0.0
+@
+S---- MASS FLOW OF INLET1
+  FILLG1       FUNGEN      PROBTIME   START          -     T.FILLG1
+          -1  1.0         0.0         0.0         0.0         0.0
+      0.      0.0      0
+@
+S---- ENTHALPY OF INLET1
+  FILLH1       FUNGEN      PROBTIME   START          -     T.FILLH1
+          -1  1.0         0.0         0.0         0.0         0.0
+      0.      0.0      0
+@
+@-----------------------------------------------------------------------
+C*--- REDEFINE
+@  ANAMO
+----- PIPE2
+@  AVAR IND IVAL LVAL RVAL KEY
+   TOPD   0    0    T 0.0    0
+@
+@-----------------------------------------------------------------------
+C---- TABLES
+@
+K---- T.FILLG1
+      0.0       0.0
+      2.0       0.0
+      5.0       %MASSFLOW1%
+@
+K---- T.FILLH1
+      0.0      %ENTH1%
+     10.0      %ENTH1%
+@
+C---- END

@@ -1,3 +1,2 @@
-!#/bin/bash
-
-make FC=gfortran OUT_TYPE=shared CFG=Release built -j
+#!/bin/bash
+make FC=gfortran CFG=Release built -j $(nproc)

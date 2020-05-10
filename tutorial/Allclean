@@ -1,0 +1,6 @@
+#!/bin/bash
+
+rm -rfv precice-run
+rm -fv precice-*.log precice-*.json
+rm -fv pipe_left.* pipe_right.*
+

@@ -1,0 +1,2 @@
+#!/bin/bash
+${ATHLET_BIN} Pipe1/pipe_left.in pipe_left -participantName SolverOne -meshName MeshOne -interfaceLocation outlet
