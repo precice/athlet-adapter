@@ -82,11 +82,14 @@ contains
       write(*,100) "Interface location: ", interfaceLocation
 
       ! Set the interfaceIndex according to the interfaceLocation
-      ! TODO: Make interfaceIndex more flexible, currently hard-coded
       if (interfaceLocation.EQ."inlet") then
         interfaceIndex = 1
+        write(*,100, advance="no") "Assuming Inlet at cell index: "
+        write(*,'(I5)') interfaceIndex
       else if (interfaceLocation.EQ."outlet") then
-        interfaceIndex = 20
+        interfaceIndex = UBOUND(PRESS,1)
+        write(*,100, advance="no") "Assuming Outlet at cell index: "
+        write(*,'(I5)') interfaceIndex
       endif
 
       !
