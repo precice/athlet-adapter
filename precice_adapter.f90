@@ -140,7 +140,7 @@ contains
       call precicef_action_required(writeInitialData, bool, 50)
       if (bool.EQ.1) then
         write(*,100) "Writing initial data"
-        call precicef_write_sdata(dataID_Pressure, 1, PRESS(interfaceIndex))
+        call precicef_write_sdata(dataID_Pressure, vertexID, PRESS(interfaceIndex))
       end if
       call precicef_initialize_data()
 
@@ -181,7 +181,7 @@ contains
           write(*,100) "Pressure before writing:"
           write(*,101) PRESS
           write(*,100) "Writing Pressure"
-          call precicef_write_sdata(dataID_Pressure, 0, PRESS(interfaceIndex))
+          call precicef_write_sdata(dataID_Pressure, vertexID, PRESS(interfaceIndex))
         endif
 
         ! Advance the coupling
