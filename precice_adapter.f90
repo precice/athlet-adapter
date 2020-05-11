@@ -8,7 +8,7 @@
 !****************************************************************************
 
 module precice_adapter
-  ! The adapter is an ATHLET plugin
+   ! The adapter is an ATHLET plugin
    use athlet_plugin
    ! preCICE Fortran bindings (Fortran module based)
    use precice
@@ -36,8 +36,10 @@ module precice_adapter
    integer                   :: interfaceIndex
    ! vertex                  : Coordinates of the interface mesh vertex
    real(8), dimension(:), allocatable :: vertex
-   ! dtlimit                 : Maximum time step size allowed by preCICE
-   real(8)                   :: dtlimit
+   ! dt_limit                 : Maximum time step size allowed by preCICE
+   real(8)                   :: dt_limit
+   ! dt_athlet               : Time step size computed by ATHLET
+   real(8), pointer          :: dt_athlet
 
    ! ATHLET plugin variables
    integer(kind=c_int)       :: c_accessorNameLength
@@ -54,7 +56,7 @@ contains
       type(HashMap_t),  pointer :: arg_scope
 
       ! Scopes to access ATHLET data
-      type(HashMap_t),  pointer :: CDTF_scope
+      type(HashMap_t),  pointer :: CDTF_scope, cca
       real(8),           dimension(:), pointer :: PRESS
 
       ! Bind pointer arg_scope to the athlet/global/arglist scope
@@ -65,7 +67,7 @@ contains
       ! Pressure from CDTF_scope
       _refVar( CDTF_scope, "press",  PRESS )
 
-      write(*,100) "ATHLET preCICE adapter: Starting..."
+      write(*,100) "===== ATHLET preCICE adapter: Starting... ====="
 
       ! Get the participantName
       participantName = char(string(get(arg_scope, "-participantName")))
@@ -124,14 +126,24 @@ contains
 
       ! Initialize preCICE
       ! This will return the maximum time step size that ATHLET is allowed to perform next
-      call precicef_initialize(dtlimit)
+      call precicef_initialize(dt_limit)
+
+      ! Get the time step size h0next from ATHLET
+      cca => getScope( state_scope, "cca" )
+      _refVar( cca, "h0next", dt_athlet )
+
+      write(*,103) dt_limit, ": Time step size limit imposed by preCICE after initialize()"
+      write(*,103) dt_athlet, ": Time step size of ATHLET (h0next)"
+      ! Adapt the time step size for the next iteration
+      dt_athlet = min(dt_athlet, dt_limit)
+      ! write(*,103) dt_athlet, ": Time step size of ATHLET after initialize()"
 
       ! TODO: Just trying arbitrary initial values for development puropses
-      if (participantName.EQ."SolverOne") then
-        write(*,100) "==== PRESS: ===="
-        write(*,101) PRESS
-        PRESS(interfaceIndex) = 12345
-      endif
+      ! if (participantName.EQ."SolverOne") then
+      !   write(*,100) "==== PRESS: ===="
+      !   write(*,101) PRESS
+      !   PRESS(interfaceIndex) = 12345
+      ! endif
 
       ! Get the data id for Pressure (8: number of characters in "Pressure")
       call precicef_get_data_id("Pressure", meshID, dataID_Pressure, 8)
@@ -144,9 +156,13 @@ contains
       end if
       call precicef_initialize_data()
 
-100   format("---[adapter] ", A)
+      write(*,100) "================================================="
+      write(*,*)
+
+100   format("---[adapter] ", A, A)
 101   format("---[adapter] ", 20(f10.1,1x))
 102   format("---[adapter] ", I5)
+103   format("---[adapter] ", f14.7, A)
 
    end subroutine
 
@@ -156,13 +172,17 @@ contains
       implicit none
 
       ! Scopes to access ATHLET data
-      type(HashMap_t),  pointer :: CDTF_scope
+      type(HashMap_t),  pointer :: CDTF_scope, cca
       real(8),           dimension(:), pointer :: PRESS
 
       CDTF_scope  => getScope( state_scope, "cdtf" )
       _refVar( CDTF_scope, "press",  PRESS  )
 
-      write(*,100) "ATHLET preCICE adapter: Executing..."
+      cca => getScope( state_scope, "cca" )
+      ! Get the time step size from ATHLET
+      _refVar( cca, "h0next", dt_athlet )
+
+      write(*,100) "===== ATHLET preCICE adapter: Executing... ====="
 
       ! Is the coupling still ongoing?
       call precicef_ongoing(ongoing)
@@ -178,23 +198,33 @@ contains
 
         ! Write data to preCICE buffers
         if (participantName.EQ."SolverOne") then
-          write(*,100) "Pressure before writing:"
-          write(*,101) PRESS
+          !write(*,100) "Pressure before writing:"
+          !write(*,101) PRESS
           write(*,100) "Writing Pressure"
           call precicef_write_sdata(dataID_Pressure, vertexID, PRESS(interfaceIndex))
         endif
 
+        write(*,102) dt_limit, ": Time step size limit imposed by preCICE before new advance()"
+        write(*,102) dt_athlet, ": Time step size of ATHLET before new advance() (h0next)"
+        ! Adapt the time step size for the next iteration
+        dt_athlet = min(dt_athlet, dt_limit)
+
+        ! We need to give the next time step size to preCICE and it will return
+        ! the maximum time step size in the same variable. Therefore, we first
+        ! copy the athlet time step size to the variable we give to preCICE.
+        dt_limit = dt_athlet
         ! Advance the coupling
-        call precicef_advance(dtlimit)
+        call precicef_advance(dt_limit)
+        ! write(*,102) dt_athlet, ": Time step size of ATHLET after advance()"
 
         ! Read data from preCICE buffers
         if (participantName.EQ."SolverTwo") then
-          write(*,100) "Pressure before reading:"
-          write(*,101) PRESS
+          !write(*,100) "Pressure before reading:"
+          !write(*,101) PRESS
           write(*,100) "Reading Pressure"
           call precicef_read_sdata(dataID_Pressure, vertexID, PRESS(interfaceIndex))
-          write(*,100) "Pressure after reading:"
-          write(*,101) PRESS
+          !write(*,100) "Pressure after reading:"
+          !write(*,101) PRESS
         endif
 
         ! After advancing, is the coupling still ongoing?
@@ -210,10 +240,12 @@ contains
 
       end if
 
-      write(*,100) "ATHLET preCICE adapter: End of execute()"
+      write(*,100) "================================================"
+      write(*,*) ""
 
 100   format("---[adapter] ", A)
 101   format("---[adapter] ", 20(f10.1,1x))
+102   format("---[adapter] ", f14.7, A)
 
    end subroutine
 
@@ -236,7 +268,13 @@ subroutine initialize_c()
       use precice_adapter
 
       call initialize_athlet_plugin()
-      call adapterinitialize()
+
+      ! This hooks adapterinitialize() to "After steady state calculation"
+      ok = connectCallback( hook_scope, "ATHLET_SteadyStateDone", adapterinitialize )
+      if (ok /= 1) then
+        write(*,100) "Unable to set callback 'ATHLET_SteadyStateDone'"
+      end if
+
 100   format("---[adapter] ", A)
 end subroutine
 
@@ -248,12 +286,10 @@ end subroutine
 subroutine execute_c()
       use precice_adapter
 
-      call adapterexecute()
-
-      ! This hooks adapterexecute() to "After completion of one FEBE time step and print of minor time step edit and last call to AFK."
-      ok = connectCallback( hook_scope, "SOPLOT_WritePlotData", adapterexecute )
+      ! This hooks adapterexecute() to "TAfter completion of one FEBE time step and print of minor time step edit and last call to AFK."
+      ok = connectCallback( hook_scope, "ATRANS_ExtDataDone", adapterexecute )
       if (ok /= 1) then
-         write(*,100) "Unable to set callback 'SOPLOT_WritePlotData'"
+         write(*,100) "Unable to set callback 'ATRANS_ExtDataDone'"
       end if
 
       ! This hooks adapterfinalize() to the end of ATHLET
