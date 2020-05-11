@@ -82,7 +82,7 @@ contains
       ! Set the interfaceIndex according to the interfaceLocation
       ! TODO: Make interfaceIndex more flexible, currently hard-coded
       if (interfaceLocation.EQ."inlet") then
-        interfaceIndex = 0
+        interfaceIndex = 1
       else if (interfaceLocation.EQ."outlet") then
         interfaceIndex = 20
       endif
