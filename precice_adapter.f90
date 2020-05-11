@@ -192,7 +192,7 @@ contains
           write(*,100) "Pressure before reading:"
           write(*,101) PRESS
           write(*,100) "Reading Pressure"
-          call precicef_read_sdata(dataID_Pressure, 0, PRESS(interfaceIndex))
+          call precicef_read_sdata(dataID_Pressure, vertexID, PRESS(interfaceIndex))
           write(*,100) "Pressure after reading:"
           write(*,101) PRESS
         endif
