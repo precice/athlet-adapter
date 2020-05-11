@@ -118,7 +118,7 @@ contains
       call precicef_get_mesh_id(meshName, meshID, 50)
       ! Add vertices to the preCICE mesh (here: only one vertex)
       call precicef_set_vertex(meshID, vertex, vertexID)
-      ! We don't need this vertex anymore
+      ! We do not need this vertex anymore
       ! TODO: We only used it as a temporary point, normally we would use a vertex already defined by the solver
       deallocate(vertex)
 
