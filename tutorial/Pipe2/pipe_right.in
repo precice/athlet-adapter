@@ -12,6 +12,7 @@ C---- HEADER
 @-----------------------------------------------------------------------
 C---- PLUGIN
     precice_adapter
+    hdf5_writer
 C---- CONTROL
 @
 @ DTPRIN ISPRIN INPPRN IPLPRN IGRPRN DTPLOT ISPLOT   SGPLOT   ITPLOT

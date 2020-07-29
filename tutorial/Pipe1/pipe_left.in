@@ -11,6 +11,7 @@ C---- HEADER
 C---- PLUGIN
 @ The preCICE adapter is a plugin for ATHLET, we load it here
     precice_adapter
+    hdf5_writer
 C---- CONTROL
 @
 @ DTPRIN: Period (problem seconds) of the screen output
