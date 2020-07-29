@@ -29,9 +29,10 @@ module precice_adapter
    ! meshID                  : preCICE meshID (returned by the preCICE solver interface "constructor")
    ! vertexID                : Vertex ids defined on the coupling mesh. Currently, only 1 vertex.
    ! dataID_Pressure         : Data ID for Pressure
+   ! dataID_TL               : Data ID for Temperature of liquid
    ! bool                    : A temporary auxiliary boolean variable
    ! ongoing                 : Is the coupling still ongoing? (used as boolean)
-   integer                   :: dimensions=3, meshID, vertexID, dataID_Pressure, bool, ongoing
+   integer                   :: dimensions=3, meshID, vertexID, dataID_Pressure, dataID_TL, bool, ongoing
    ! interfaceIndex          : ATHLET cell index for the interface
    integer                   :: interfaceIndex
    ! vertex                  : Coordinates of the interface mesh vertex
@@ -40,6 +41,8 @@ module precice_adapter
    real(8)                   :: dt_limit
    ! dt_athlet               : Time step size computed by ATHLET
    real(8), pointer          :: dt_athlet
+   real(8), pointer          :: time_end
+   real(8), pointer          :: time
 
    ! ATHLET plugin variables
    integer(kind=c_int)       :: c_accessorNameLength
@@ -56,8 +59,8 @@ contains
       type(HashMap_t),  pointer :: arg_scope
 
       ! Scopes to access ATHLET data
-      type(HashMap_t),  pointer :: CDTF_scope, cca
-      real(8),           dimension(:), pointer :: PRESS
+      type(HashMap_t),  pointer :: CDTF_scope, CDPR_scope, cca
+      real(8),           dimension(:), pointer :: PRESS, TL
 
       ! Bind pointer arg_scope to the athlet/global/arglist scope
       arg_scope => getScope( "athlet", "global", "arglist" )
@@ -66,6 +69,8 @@ contains
       CDTF_scope  => getScope( state_scope, "cdtf" )
       ! Pressure from CDTF_scope
       _refVar( CDTF_scope, "press",  PRESS )
+      ! Temperature of liquid from CDPR_scope
+      _refVar( CDPR_scope, "tl",  TL )
 
       write(*,100) "===== ATHLET preCICE adapter: Starting... ====="
 
@@ -131,31 +136,45 @@ contains
       ! This will return the maximum time step size that ATHLET is allowed to perform next
       call precicef_initialize(dt_limit)
 
-      ! Get the time step size h0next from ATHLET
+      ! Get the time step size dt from ATHLET
       cca => getScope( state_scope, "cca" )
-      _refVar( cca, "h0next", dt_athlet )
+      _refVar( cca, "dt", dt_athlet )
 
       write(*,103) dt_limit, ": Time step size limit imposed by preCICE after initialize()"
-      write(*,103) dt_athlet, ": Time step size of ATHLET (h0next)"
+      write(*,103) dt_athlet, ": Time step size of ATHLET (dt)"
       ! Adapt the time step size for the next iteration
       dt_athlet = min(dt_athlet, dt_limit)
       ! write(*,103) dt_athlet, ": Time step size of ATHLET after initialize()"
 
       ! TODO: Just trying arbitrary initial values for development puropses
-      ! if (participantName.EQ."SolverOne") then
-      !   write(*,100) "==== PRESS: ===="
-      !   write(*,101) PRESS
-      !   PRESS(interfaceIndex) = 12345
-      ! endif
+      if (participantName.EQ."SolverOne") then
+        write(*,100) "==== PRESS: ===="
+        write(*,101) PRESS
+        ! PRESS(interfaceIndex) = 12345 ! Set only the interface node
+        PRESS = 12345                   ! Set the complete array
+        write(*,100) "==== PRESS: ===="
+        write(*,101) PRESS
+
+        write(*,100) "==== TL: ===="
+        write(*,101) TL
+        ! TL(interfaceIndex) = 123      ! Set only the interface node
+        TL = 123                        ! Set the complete array
+        write(*,100) "==== TL: ===="
+        write(*,101) TL
+      endif
 
       ! Get the data id for Pressure (8: number of characters in "Pressure")
       call precicef_get_data_id("Pressure", meshID, dataID_Pressure, 8)
+
+      ! Get the data id for TL (2: number of characters in "TL")
+      call precicef_get_data_id("TL", meshID, dataID_TL, 2)
 
       ! Do we need to write initial data? (specified in the config)
       call precicef_action_required(writeInitialData, bool, 50)
       if (bool.EQ.1) then
         write(*,100) "Writing initial data"
         call precicef_write_sdata(dataID_Pressure, vertexID, PRESS(interfaceIndex))
+        call precicef_write_sdata(dataID_TL, vertexID, TL(interfaceIndex))
       end if
       call precicef_initialize_data()
 
@@ -175,17 +194,25 @@ contains
       implicit none
 
       ! Scopes to access ATHLET data
-      type(HashMap_t),  pointer :: CDTF_scope, cca
-      real(8),           dimension(:), pointer :: PRESS
+      type(HashMap_t),  pointer :: CDTF_scope, CDPR_scope, cca, cgcsm_scope
+      real(8), dimension(:), pointer :: PRESS, TL
 
       CDTF_scope  => getScope( state_scope, "cdtf" )
       _refVar( CDTF_scope, "press",  PRESS  )
 
+      CDPR_scope => getScope( state_scope, "cdpr" )
+      _refVar( CDPR_scope, "tl",  TL )
+
       cca => getScope( state_scope, "cca" )
       ! Get the time step size from ATHLET
-      _refVar( cca, "h0next", dt_athlet )
+      _refVar( cca, "dt", dt_athlet )
+      _refVar( cca, 't',  time )
+
+      cgcsm_scope => getScope( state_scope, "cgcsm" )
+      _refVar( cgcsm_scope, "te", time_end )
 
       write(*,100) "===== ATHLET preCICE adapter: Executing... ====="
+      write(*,102) time, ": Current time"
 
       ! Is the coupling still ongoing?
       call precicef_ongoing(ongoing)
@@ -201,14 +228,18 @@ contains
 
         ! Write data to preCICE buffers
         if (participantName.EQ."SolverOne") then
-          !write(*,100) "Pressure before writing:"
-          !write(*,101) PRESS
+          write(*,100) "Pressure before writing:"
+          write(*,101) PRESS
           write(*,100) "Writing Pressure"
           call precicef_write_sdata(dataID_Pressure, vertexID, PRESS(interfaceIndex))
+          write(*,100) "Temperature of Liquid before writing:"
+          write(*,101) TL
+          write(*,100) "Writing Temperature of Liquid"
+          call precicef_write_sdata(dataID_TL, vertexID, TL(interfaceIndex))
         endif
 
         write(*,102) dt_limit, ": Time step size limit imposed by preCICE before new advance()"
-        write(*,102) dt_athlet, ": Time step size of ATHLET before new advance() (h0next)"
+        write(*,102) dt_athlet, ": Time step size of ATHLET before new advance() (dt)"
         ! Adapt the time step size for the next iteration
         dt_athlet = min(dt_athlet, dt_limit)
 
@@ -218,16 +249,26 @@ contains
         dt_limit = dt_athlet
         ! Advance the coupling
         call precicef_advance(dt_limit)
-        ! write(*,102) dt_athlet, ": Time step size of ATHLET after advance()"
+        write(*,102) dt_athlet, ": Time step size of ATHLET after advance()"
 
         ! Read data from preCICE buffers
         if (participantName.EQ."SolverTwo") then
-          !write(*,100) "Pressure before reading:"
-          !write(*,101) PRESS
+          write(*,100) "Pressure before reading:"
+          write(*,101) PRESS
+          write(*,100) "TL before reading:"
+          write(*,101) TL
           write(*,100) "Reading Pressure"
           call precicef_read_sdata(dataID_Pressure, vertexID, PRESS(interfaceIndex))
-          !write(*,100) "Pressure after reading:"
-          !write(*,101) PRESS
+          write(*,100) "Temperature of Liquid before reading:"
+          write(*,101) TL
+          write(*,100) "Reading Temperature of Liquid"
+          call precicef_read_sdata(dataID_TL, vertexID, TL(interfaceIndex))
+          ! TODO Debugging
+          ! PRESS(interfaceIndex+1) = PRESS(interfaceIndex)
+          write(*,100) "Pressure after reading:"
+          write(*,101) PRESS
+          write(*,100) "TL after reading:"
+          write(*,101) TL
         endif
 
         ! After advancing, is the coupling still ongoing?
@@ -241,8 +282,11 @@ contains
           call precicef_mark_action_fulfilled(readItCheckp, 50)
         end if
 
+      else
+          write(*,100) "Coupling is not ongoing. Will now stop the simulation."
+          time_end = time + 0.01
       end if
-
+      write(*,102) time, ": Current time"
       write(*,100) "================================================"
       write(*,*) ""
 
