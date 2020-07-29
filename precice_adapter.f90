@@ -70,7 +70,7 @@ contains
       ! Pressure from CDTF_scope
       _refVar( CDTF_scope, "press",  PRESS )
       ! Temperature of liquid from CDPR_scope
-      _refVar( CDPR_scope, "tl",  TL )
+      ! _refVar( CDPR_scope, "tl",  TL )
 
       write(*,100) "===== ATHLET preCICE adapter: Starting... ====="
 
@@ -155,26 +155,26 @@ contains
         write(*,100) "==== PRESS: ===="
         write(*,101) PRESS
 
-        write(*,100) "==== TL: ===="
-        write(*,101) TL
+        ! write(*,100) "==== TL: ===="
+        ! write(*,101) TL
         ! TL(interfaceIndex) = 123      ! Set only the interface node
-        TL = 123                        ! Set the complete array
-        write(*,100) "==== TL: ===="
-        write(*,101) TL
+        ! TL = 123                        ! Set the complete array
+        ! write(*,100) "==== TL: ===="
+        ! write(*,101) TL
       endif
 
       ! Get the data id for Pressure (8: number of characters in "Pressure")
       call precicef_get_data_id("Pressure", meshID, dataID_Pressure, 8)
 
       ! Get the data id for TL (2: number of characters in "TL")
-      call precicef_get_data_id("TL", meshID, dataID_TL, 2)
+      ! call precicef_get_data_id("TL", meshID, dataID_TL, 2)
 
       ! Do we need to write initial data? (specified in the config)
       call precicef_action_required(writeInitialData, bool, 50)
       if (bool.EQ.1) then
         write(*,100) "Writing initial data"
         call precicef_write_sdata(dataID_Pressure, vertexID, PRESS(interfaceIndex))
-        call precicef_write_sdata(dataID_TL, vertexID, TL(interfaceIndex))
+        ! call precicef_write_sdata(dataID_TL, vertexID, TL(interfaceIndex))
       end if
       call precicef_initialize_data()
 
@@ -201,7 +201,7 @@ contains
       _refVar( CDTF_scope, "press",  PRESS  )
 
       CDPR_scope => getScope( state_scope, "cdpr" )
-      _refVar( CDPR_scope, "tl",  TL )
+      ! _refVar( CDPR_scope, "tl",  TL )
 
       cca => getScope( state_scope, "cca" )
       ! Get the time step size from ATHLET
@@ -232,10 +232,10 @@ contains
           write(*,101) PRESS
           write(*,100) "Writing Pressure"
           call precicef_write_sdata(dataID_Pressure, vertexID, PRESS(interfaceIndex))
-          write(*,100) "Temperature of Liquid before writing:"
-          write(*,101) TL
-          write(*,100) "Writing Temperature of Liquid"
-          call precicef_write_sdata(dataID_TL, vertexID, TL(interfaceIndex))
+          ! write(*,100) "Temperature of Liquid before writing:"
+          ! write(*,101) TL
+          ! write(*,100) "Writing Temperature of Liquid"
+          ! call precicef_write_sdata(dataID_TL, vertexID, TL(interfaceIndex))
         endif
 
         write(*,102) dt_limit, ": Time step size limit imposed by preCICE before new advance()"
@@ -255,20 +255,20 @@ contains
         if (participantName.EQ."SolverTwo") then
           write(*,100) "Pressure before reading:"
           write(*,101) PRESS
-          write(*,100) "TL before reading:"
-          write(*,101) TL
+          ! write(*,100) "TL before reading:"
+          ! write(*,101) TL
           write(*,100) "Reading Pressure"
           call precicef_read_sdata(dataID_Pressure, vertexID, PRESS(interfaceIndex))
-          write(*,100) "Temperature of Liquid before reading:"
-          write(*,101) TL
-          write(*,100) "Reading Temperature of Liquid"
-          call precicef_read_sdata(dataID_TL, vertexID, TL(interfaceIndex))
+          ! write(*,100) "Temperature of Liquid before reading:"
+          ! write(*,101) TL
+          ! write(*,100) "Reading Temperature of Liquid"
+          ! call precicef_read_sdata(dataID_TL, vertexID, TL(interfaceIndex))
           ! TODO Debugging
           ! PRESS(interfaceIndex+1) = PRESS(interfaceIndex)
           write(*,100) "Pressure after reading:"
           write(*,101) PRESS
-          write(*,100) "TL after reading:"
-          write(*,101) TL
+          ! write(*,100) "TL after reading:"
+          ! write(*,101) TL
         endif
 
         ! After advancing, is the coupling still ongoing?
