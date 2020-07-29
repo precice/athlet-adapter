@@ -1,2 +1,2 @@
 #!/bin/bash
-${ATHLET_BIN} Pipe1/pipe_left.in pipe_left -participantName SolverTwo -meshName MeshTwo -interfaceLocation inlet
+${ATHLET_BIN} Pipe2/pipe_right.in pipe_right -participantName SolverTwo -meshName MeshTwo -interfaceLocation inlet
