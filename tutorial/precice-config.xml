@@ -39,7 +39,7 @@
 
     <coupling-scheme:serial-explicit>
       <participants first="SolverOne" second="SolverTwo" />
-      <max-time value="1" />
+      <max-time value="0.15" />
       <time-window-size value="0.05" />
       <exchange data="Pressure"   mesh="MeshOne" from="SolverOne" to="SolverTwo" />
       <exchange data="TL"   mesh="MeshOne" from="SolverOne" to="SolverTwo" />

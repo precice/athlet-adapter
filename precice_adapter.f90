@@ -41,7 +41,13 @@ module precice_adapter
    real(8)                   :: dt_limit
    ! dt_athlet               : Time step size computed by ATHLET
    real(8), pointer          :: dt_athlet
+   ! hmax_athlet             : Maximum time step size dictated to ATHLET
+   real(8), pointer          :: hmax_athlet
+   ! hmax_athlet_initial     : Maximum time step size defined by ATHLET, before the adapter modifies it
+   real(8)                   :: hmax_athlet_initial
+   ! time_end                : End time of ATHLET
    real(8), pointer          :: time_end
+   ! time                    : Current time of ATHLET
    real(8), pointer          :: time
 
    ! ATHLET plugin variables
@@ -59,7 +65,7 @@ contains
       type(HashMap_t),  pointer :: arg_scope
 
       ! Scopes to access ATHLET data
-      type(HashMap_t),  pointer :: CDTF_scope, CDPR_scope, cca
+      type(HashMap_t),  pointer :: CDTF_scope, CDPR_scope, cca, ccf
       real(8),           dimension(:), pointer :: PRESS, TL
 
       ! Bind pointer arg_scope to the athlet/global/arglist scope
@@ -132,19 +138,33 @@ contains
       ! TODO: We only used it as a temporary point, normally we would use a vertex already defined by the solver
       deallocate(vertex)
 
-      ! Initialize preCICE
-      ! This will return the maximum time step size that ATHLET is allowed to perform next
-      call precicef_initialize(dt_limit)
-
       ! Get the time step size dt from ATHLET
+      ccf => getScope( state_scope, "ccf" )
+      _refVar( ccf, "hmax", hmax_athlet )
+
+      ! Get the max allowed time step size hmax from ATHLET
       cca => getScope( state_scope, "cca" )
       _refVar( cca, "dt", dt_athlet )
 
-      write(*,103) dt_limit, ": Time step size limit imposed by preCICE after initialize()"
-      write(*,103) dt_athlet, ": Time step size of ATHLET (dt)"
+
+      dt_limit = hmax_athlet
+
+      write(*,103) dt_athlet, ": Current time step size of ATHLET (pointer to dt)"
+      write(*,103) dt_limit, ": Next time step size limit before initialize(dt_limit) - not a pointer, preset as hmax"
+      write(*,103) hmax_athlet, ": Next max allowed time step size of ATHLET (pointer to hmax)"
+      ! Initialize preCICE
+      ! This will return the maximum time step size that ATHLET is allowed to perform next
+      call precicef_initialize(dt_limit)
+      write(*,103) dt_athlet, ": Time step size of ATHLET (pointer to dt)"
+      write(*,103) dt_limit, ": Time step size limit imposed by preCICE after initialize(dt_limit)"
+      write(*,103) hmax_athlet, ": Current max allowed time step size of ATHLET (pointer to hmax)"
+
+      ! Store the initial (user-defined) maximum time step size
+      hmax_athlet_initial = hmax_athlet
+      write(*,103) hmax_athlet_initial, ": Initial max allowed time step size of ATHLET (backup of hmax)"
       ! Adapt the time step size for the next iteration
-      dt_athlet = min(dt_athlet, dt_limit)
-      ! write(*,103) dt_athlet, ": Time step size of ATHLET after initialize()"
+      hmax_athlet = min(hmax_athlet_initial, dt_limit)
+      write(*,103) hmax_athlet, ": --> Next max allowed time step size of ATHLET (pointer to hmax)"
 
       ! TODO: Just trying arbitrary initial values for development puropses
       if (participantName.EQ."SolverOne") then
@@ -194,7 +214,7 @@ contains
       implicit none
 
       ! Scopes to access ATHLET data
-      type(HashMap_t),  pointer :: CDTF_scope, CDPR_scope, cca, cgcsm_scope
+      type(HashMap_t),  pointer :: CDTF_scope, CDPR_scope, cca, ccf, cgcsm_scope
       real(8), dimension(:), pointer :: PRESS, TL
 
       CDTF_scope  => getScope( state_scope, "cdtf" )
@@ -203,9 +223,11 @@ contains
       CDPR_scope => getScope( state_scope, "cdpr" )
       ! _refVar( CDPR_scope, "tl",  TL )
 
+      ! Get the time and current/max time step size from ATHLET
+      ccf => getScope( state_scope, "ccf" )
       cca => getScope( state_scope, "cca" )
-      ! Get the time step size from ATHLET
       _refVar( cca, "dt", dt_athlet )
+      _refVar( ccf, "hmax", hmax_athlet)
       _refVar( cca, 't',  time )
 
       cgcsm_scope => getScope( state_scope, "cgcsm" )
@@ -238,18 +260,24 @@ contains
           ! call precicef_write_sdata(dataID_TL, vertexID, TL(interfaceIndex))
         endif
 
-        write(*,102) dt_limit, ": Time step size limit imposed by preCICE before new advance()"
-        write(*,102) dt_athlet, ": Time step size of ATHLET before new advance() (dt)"
-        ! Adapt the time step size for the next iteration
-        dt_athlet = min(dt_athlet, dt_limit)
+        write(*,102) dt_athlet, ": Time step size of ATHLET (pointer to dt)"
+        write(*,102) dt_limit, ": Previous preCICE time step size limit - before advance(dt_limit)"
+        write(*,102) hmax_athlet, ": Max allowed time step size of ATHLET (pointer to hmax)"
 
-        ! We need to give the next time step size to preCICE and it will return
-        ! the maximum time step size in the same variable. Therefore, we first
+        ! We need to give the current time step size to preCICE and it will return
+        ! the maximum time step size for the next iteration in the same variable. Therefore, we first
         ! copy the athlet time step size to the variable we give to preCICE.
         dt_limit = dt_athlet
         ! Advance the coupling
         call precicef_advance(dt_limit)
-        write(*,102) dt_athlet, ": Time step size of ATHLET after advance()"
+        write(*,102) dt_athlet, ": Current time step size of ATHLET (pointer to dt)"
+        write(*,102) dt_limit, ": Next preCICE time step size limit - after advance(dt_limit)"
+        write(*,102) hmax_athlet, ": Current max allowed time step size of ATHLET (pointer to hmax)"
+        write(*,102) hmax_athlet_initial, ": Initial max allowed time step size of ATHLET (backup of hmax)"
+
+        ! Adapt the max time step size for the next iteration
+        hmax_athlet = min(hmax_athlet_initial, dt_limit)
+        write(*,102) hmax_athlet, ": --> Next max allowed time step size of ATHLET (pointer to hmax)"
 
         ! Read data from preCICE buffers
         if (participantName.EQ."SolverTwo") then
@@ -284,9 +312,8 @@ contains
 
       else
           write(*,100) "Coupling is not ongoing. Will now stop the simulation."
-          time_end = time + 0.01
+          time_end = 0
       end if
-      write(*,102) time, ": Current time"
       write(*,100) "================================================"
       write(*,*) ""
 
