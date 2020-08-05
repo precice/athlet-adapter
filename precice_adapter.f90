@@ -301,6 +301,10 @@ contains
 
         ! After advancing, is the coupling still ongoing?
         call precicef_ongoing(ongoing)
+        if (ongoing .EQ. 0) then
+          write(*,100) "Coupling is not ongoing. Will now stop the simulation."
+          time_end = 0
+        end if
 
         ! Do we need to go back to the last saved checkpoint?
         call precicef_action_required(readItCheckp, bool, 50)
