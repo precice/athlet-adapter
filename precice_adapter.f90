@@ -303,7 +303,7 @@ contains
         call precicef_ongoing(ongoing)
         if (ongoing .EQ. 0) then
           write(*,100) "Coupling is not ongoing. Will now stop the simulation."
-          time_end = 0
+          time_end = -1
         end if
 
         ! Do we need to go back to the last saved checkpoint?
