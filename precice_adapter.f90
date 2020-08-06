@@ -214,11 +214,15 @@ contains
       implicit none
 
       ! Scopes to access ATHLET data
-      type(HashMap_t),  pointer :: CDTF_scope, CDPR_scope, cca, ccf, cgcsm_scope
+      type(HashMap_t),  pointer :: CDTF_scope, CDPR_scope, cca, ccf, cgcsm_scope, caext2_scope
       real(8), dimension(:), pointer :: PRESS, TL
+      real(8), dimension(:,:), pointer :: PCOPL
 
       CDTF_scope  => getScope( state_scope, "cdtf" )
       _refVar( CDTF_scope, "press",  PRESS  )
+
+      caext2_scope => getScope( state_scope, "caext2" )
+      _refVar( caext2_scope, "pcopl", PCOPL )
 
       CDPR_scope => getScope( state_scope, "cdpr" )
       ! _refVar( CDPR_scope, "tl",  TL )
@@ -235,6 +239,14 @@ contains
 
       write(*,100) "===== ATHLET preCICE adapter: Executing... ====="
       write(*,102) time, ": Current time"
+
+      ! write(*,100) "PCOPL(:,:):"
+      ! write(*,*) PCOPL
+      PCOPL(1,1) = 5
+      !write(*,100) "PCOPL(1,1):"
+      !write(*,*) PCOPL(1,1)
+      !write(*,100) "PCOPL(2,1):"
+      !write(*,*) PCOPL(2,1)
 
       ! Is the coupling still ongoing?
       call precicef_ongoing(ongoing)
