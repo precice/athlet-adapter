@@ -236,88 +236,80 @@ contains
       write(*,100) "===== ATHLET preCICE adapter: Executing... ====="
       write(*,102) time, ": Current time"
 
-      ! Is the coupling still ongoing?
-      call precicef_ongoing(ongoing)
-      if (ongoing.NE.0) then
-
-        ! Do we need to write a coupling iteration checkpoint? (only relevant in implicit coupling)
-        call precicef_action_required(writeItCheckp, bool, 50)
-        if (bool.EQ.1) then
-          ! TODO: Currently, no checkpoint is being written
-          write(*,100) "Writing iteration checkpoint (! NOT IMPLEMENTED !)"
-          call precicef_mark_action_fulfilled(writeItCheckp, 50)
-        end if
-
-        ! Write data to preCICE buffers
-        if (participantName.EQ."SolverOne") then
-          write(*,100) "Pressure before writing:"
-          write(*,101) PRESS
-          write(*,100) "Writing Pressure"
-          call precicef_write_sdata(dataID_Pressure, vertexID, PRESS(interfaceIndex))
-          ! write(*,100) "Temperature of Liquid before writing:"
-          ! write(*,101) TL
-          ! write(*,100) "Writing Temperature of Liquid"
-          ! call precicef_write_sdata(dataID_TL, vertexID, TL(interfaceIndex))
-        endif
-
-        write(*,102) dt_athlet, ": Time step size of ATHLET (pointer to dt)"
-        write(*,102) dt_limit, ": Previous preCICE time step size limit - before advance(dt_limit)"
-        write(*,102) hmax_athlet, ": Max allowed time step size of ATHLET (pointer to hmax)"
-
-        ! We need to give the current time step size to preCICE and it will return
-        ! the maximum time step size for the next iteration in the same variable. Therefore, we first
-        ! copy the athlet time step size to the variable we give to preCICE.
-        dt_limit = dt_athlet
-        ! Advance the coupling
-        call precicef_advance(dt_limit)
-        write(*,102) dt_athlet, ": Current time step size of ATHLET (pointer to dt)"
-        write(*,102) dt_limit, ": Next preCICE time step size limit - after advance(dt_limit)"
-        write(*,102) hmax_athlet, ": Current max allowed time step size of ATHLET (pointer to hmax)"
-        write(*,102) hmax_athlet_initial, ": Initial max allowed time step size of ATHLET (backup of hmax)"
-
-        ! Adapt the max time step size for the next iteration
-        hmax_athlet = min(hmax_athlet_initial, dt_limit)
-        write(*,102) hmax_athlet, ": --> Next max allowed time step size of ATHLET (pointer to hmax)"
-
-        ! Read data from preCICE buffers
-        if (participantName.EQ."SolverTwo") then
-          write(*,100) "Pressure before reading:"
-          write(*,101) PRESS
-          ! write(*,100) "TL before reading:"
-          ! write(*,101) TL
-          write(*,100) "Reading Pressure"
-          call precicef_read_sdata(dataID_Pressure, vertexID, PRESS(interfaceIndex))
-          ! write(*,100) "Temperature of Liquid before reading:"
-          ! write(*,101) TL
-          ! write(*,100) "Reading Temperature of Liquid"
-          ! call precicef_read_sdata(dataID_TL, vertexID, TL(interfaceIndex))
-          ! TODO Debugging
-          ! PRESS(interfaceIndex+1) = PRESS(interfaceIndex)
-          write(*,100) "Pressure after reading:"
-          write(*,101) PRESS
-          ! write(*,100) "TL after reading:"
-          ! write(*,101) TL
-        endif
-
-        ! After advancing, is the coupling still ongoing?
-        call precicef_ongoing(ongoing)
-        if (ongoing .EQ. 0) then
-          write(*,100) "Coupling is not ongoing. Will now stop the simulation."
-          time_end = -1
-        end if
-
-        ! Do we need to go back to the last saved checkpoint?
-        call precicef_action_required(readItCheckp, bool, 50)
-        if (bool.EQ.1) then
-          write(*,100) "Reading iteration checkpoint (! NOT IMPLEMENTED !)"
-          ! TODO: Currently, no checkpoint is being read
-          call precicef_mark_action_fulfilled(readItCheckp, 50)
-        end if
-
-      else
-          write(*,100) "Coupling is not ongoing. Will now stop the simulation."
-          time_end = 0
+      ! Do we need to write a coupling iteration checkpoint? (only relevant in implicit coupling)
+      call precicef_action_required(writeItCheckp, bool, 50)
+      if (bool.EQ.1) then
+        ! TODO: Currently, no checkpoint is being written
+        write(*,100) "Writing iteration checkpoint (! NOT IMPLEMENTED !)"
+        call precicef_mark_action_fulfilled(writeItCheckp, 50)
       end if
+
+      ! Write data to preCICE buffers
+      if (participantName.EQ."SolverOne") then
+        write(*,100) "Pressure before writing:"
+        write(*,101) PRESS
+        write(*,100) "Writing Pressure"
+        call precicef_write_sdata(dataID_Pressure, vertexID, PRESS(interfaceIndex))
+        ! write(*,100) "Temperature of Liquid before writing:"
+        ! write(*,101) TL
+        ! write(*,100) "Writing Temperature of Liquid"
+        ! call precicef_write_sdata(dataID_TL, vertexID, TL(interfaceIndex))
+      endif
+
+      write(*,102) dt_athlet, ": Time step size of ATHLET (pointer to dt)"
+      write(*,102) dt_limit, ": Previous preCICE time step size limit - before advance(dt_limit)"
+      write(*,102) hmax_athlet, ": Max allowed time step size of ATHLET (pointer to hmax)"
+
+      ! We need to give the current time step size to preCICE and it will return
+      ! the maximum time step size for the next iteration in the same variable. Therefore, we first
+      ! copy the athlet time step size to the variable we give to preCICE.
+      dt_limit = dt_athlet
+      ! Advance the coupling
+      call precicef_advance(dt_limit)
+      write(*,102) dt_athlet, ": Current time step size of ATHLET (pointer to dt)"
+      write(*,102) dt_limit, ": Next preCICE time step size limit - after advance(dt_limit)"
+      write(*,102) hmax_athlet, ": Current max allowed time step size of ATHLET (pointer to hmax)"
+      write(*,102) hmax_athlet_initial, ": Initial max allowed time step size of ATHLET (backup of hmax)"
+
+      ! Adapt the max time step size for the next iteration
+      hmax_athlet = min(hmax_athlet_initial, dt_limit)
+      write(*,102) hmax_athlet, ": --> Next max allowed time step size of ATHLET (pointer to hmax)"
+
+      ! Read data from preCICE buffers
+      if (participantName.EQ."SolverTwo") then
+        write(*,100) "Pressure before reading:"
+        write(*,101) PRESS
+        ! write(*,100) "TL before reading:"
+        ! write(*,101) TL
+        write(*,100) "Reading Pressure"
+        call precicef_read_sdata(dataID_Pressure, vertexID, PRESS(interfaceIndex))
+        ! write(*,100) "Temperature of Liquid before reading:"
+        ! write(*,101) TL
+        ! write(*,100) "Reading Temperature of Liquid"
+        ! call precicef_read_sdata(dataID_TL, vertexID, TL(interfaceIndex))
+        ! TODO Debugging
+        ! PRESS(interfaceIndex+1) = PRESS(interfaceIndex)
+        write(*,100) "Pressure after reading:"
+        write(*,101) PRESS
+        ! write(*,100) "TL after reading:"
+        ! write(*,101) TL
+      endif
+
+      ! After advancing, is the coupling still ongoing?
+      call precicef_ongoing(ongoing)
+      if (ongoing .EQ. 0) then
+        write(*,100) "Coupling is not ongoing. Will now stop the simulation."
+        time_end = -1
+      end if
+
+      ! Do we need to go back to the last saved checkpoint?
+      call precicef_action_required(readItCheckp, bool, 50)
+      if (bool.EQ.1) then
+        write(*,100) "Reading iteration checkpoint (! NOT IMPLEMENTED !)"
+        ! TODO: Currently, no checkpoint is being read
+        call precicef_mark_action_fulfilled(readItCheckp, 50)
+      end if
+
       write(*,100) "================================================"
       write(*,*) ""
 
