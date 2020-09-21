@@ -76,7 +76,7 @@ contains
       ! Pressure from CDTF_scope
       _refVar( CDTF_scope, "press",  PRESS )
       ! Temperature of liquid from CDPR_scope
-      ! _refVar( CDPR_scope, "tl",  TL )
+      _refVar( CDPR_scope, "tl",  TL )
 
       write(*,100) "===== ATHLET preCICE adapter: Starting... ====="
 
@@ -175,8 +175,8 @@ contains
         write(*,100) "==== PRESS: ===="
         write(*,101) PRESS
 
-        ! write(*,100) "==== TL: ===="
-        ! write(*,101) TL
+        write(*,100) "==== TL: ===="
+        write(*,101) TL
         ! TL(interfaceIndex) = 123      ! Set only the interface node
         ! TL = 123                        ! Set the complete array
         ! write(*,100) "==== TL: ===="
