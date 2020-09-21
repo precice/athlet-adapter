@@ -73,6 +73,8 @@ contains
 
       ! Bind pointer CDTF_scope to the state_scope/cdtf
       CDTF_scope  => getScope( state_scope, "cdtf" )
+      ! Bind pointer CDTF_scope to the state_scope/cdpr
+      CDPR_scope  => getScope( state_scope, "cdpr" )
       ! Pressure from CDTF_scope
       _refVar( CDTF_scope, "press",  PRESS )
       ! Temperature of liquid from CDPR_scope
